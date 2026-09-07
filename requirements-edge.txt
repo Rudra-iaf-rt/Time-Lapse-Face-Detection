@@ -1,0 +1,5 @@
+# Optional edge / export extras — not required for core CPU/CUDA PyTorch path
+onnx>=1.14.0
+onnxruntime>=1.15.0
+# tensorrt  # install from NVIDIA when available; never mandatory
+psutil>=5.9.0

@@ -1,43 +1,42 @@
-# docker/docker-compose.yml
-version: '3.8'
+# docker-compose for multicam-reid
+# Dev tools (pgadmin, redis-commander) are under profile "tools"
 
 services:
   postgres:
     image: postgres:15
     container_name: multicam_postgres
     environment:
-      POSTGRES_DB: multicam_reid
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-multicam_reid}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - multicam_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-multicam_reid}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.12.1
     container_name: multicam_qdrant
     ports:
-      - "6333:6333"
+      - "${QDRANT_PORT:-6333}:6333"
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
-      - ./qdrant/config.yaml:/qdrant/config/production.yaml
     environment:
       QDRANT__SERVICE__GRPC_PORT: 6334
       QDRANT__SERVICE__HTTP_PORT: 6333
     networks:
       - multicam_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333'"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -46,10 +45,10 @@ services:
     image: redis:7-alpine
     container_name: multicam_redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
-      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
     command: redis-server /usr/local/etc/redis/redis.conf
     networks:
       - multicam_network
@@ -59,12 +58,54 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: multicam_api
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: postgres
+      QDRANT_HOST: qdrant
+      REDIS_HOST: redis
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - multicam_network
+    profiles: ["full"]
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: multicam_frontend
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:8000/api/ws}
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    networks:
+      - multicam_network
+    profiles: ["full"]
+
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: multicam_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-change-me}
     ports:
       - "5050:80"
     volumes:
@@ -73,18 +114,20 @@ services:
       - multicam_network
     depends_on:
       - postgres
+    profiles: ["tools"]
 
   redis-commander:
     image: rediscommander/redis-commander:latest
     container_name: multicam_redis_commander
     environment:
-      REDIS_HOSTS: localhost:redis:6379
+      REDIS_HOSTS: local:redis:6379
     ports:
       - "8081:8081"
     networks:
       - multicam_network
     depends_on:
       - redis
+    profiles: ["tools"]
 
 volumes:
   postgres_data:

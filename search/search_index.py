@@ -28,8 +28,8 @@ class SearchIndex:
                 first_seen DATETIME,
                 last_seen DATETIME,
                 total_duration REAL,
-                cameras_visited TEXT,  # JSON
-                route TEXT,  # JSON
+                cameras_visited TEXT,
+                route TEXT,
                 confidence REAL,
                 face_count INTEGER,
                 reid_count INTEGER,
@@ -57,7 +57,7 @@ class SearchIndex:
                 timestamp DATETIME,
                 camera_id INTEGER,
                 event_type TEXT,
-                metadata TEXT,  # JSON
+                metadata TEXT,
                 PRIMARY KEY (global_id, timestamp)
             )
         ''')

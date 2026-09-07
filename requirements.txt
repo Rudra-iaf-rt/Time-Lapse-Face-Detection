@@ -1,164 +1,45 @@
-# ═══════════════════════════════════════════════════════
-#  Multi-Camera ReID  —  requirements.txt
-#  Python 3.10  |  CPU-first  |  zero build steps
-# ═══════════════════════════════════════════════════════
+# Core runtime dependencies for multicam-reid (Python 3.10+)
+# Install PyTorch for your platform first if needed:
+#   CPU:   pip install torch torchvision
+#   CUDA:  pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 
-# ── PyTorch ────────────────────────────────────────────
-# CPU:   pip install torch torchvision
-# CUDA 11.8: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-# CUDA 12.1: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 torch>=2.0.0
-torchvision>=0.15.0          # MobileNetV3 is here — ships with PyTorch
-
-# ── Detection + Tracking ───────────────────────────────
-ultralytics>=8.0.200         # YOLOv8 + ByteTrack built in
-
-# ── Vision ─────────────────────────────────────────────
+torchvision>=0.15.0
+ultralytics>=8.0.200
 opencv-python>=4.8.0
 Pillow>=10.0.0
-
-# ── Data ───────────────────────────────────────────────
 numpy>=1.24.0
 pandas>=2.0.0
-
-# ── Dashboard ──────────────────────────────────────────
+scipy>=1.7.0
+scikit-image>=0.18.0
+matplotlib>=3.7.0
+seaborn>=0.11.0
+tqdm>=4.65.0
+pyyaml>=6.0.0
+networkx>=2.6.0
+plotly>=5.0.0
 streamlit>=1.32.0
 
-# ── Utils ──────────────────────────────────────────────
-tqdm>=4.65.0
-matplotlib>=3.7.0
-
-# ── Database ───────────────────────────────────────────
-# sqlite3 is in Python stdlib — no install needed
-
-# Re-ID specific
-torch>=1.9.0
-torchvision>=0.10.0
-fastreid  # or use your own implementation
-opencv-python>=4.5.0
-scikit-image>=0.18.0
-numpy>=1.19.0
-scipy>=1.7.0
-
-# Re-ID specific
-scipy>=1.7.0
-numpy>=1.19.0
-
-# Configuration
-pyyaml>=5.4.1
-
-# Database
-# sqlite3 is built-in
-
-# Visualization
-matplotlib>=3.3.0
-seaborn>=0.11.0
-
-# Utilities
-tqdm>=4.60.0
-pillow>=8.0.0
-
-# Optional: For better Re-ID models
-# fastreid  # Uncomment if using fastreid
-# torchreid  # Uncomment if using torchreid
-
-# requirements.txt - Add face-specific dependencies
-
-# Face Detection
-opencv-python>=4.5.0
+# Face (optional heavy deps — comment out if unused)
 mtcnn>=0.1.0
-# retinaface-pytorch  # Optional, uncomment if using RetinaFace
-
-# Face Recognition
 facenet-pytorch>=2.5.2
-insightface>=0.7.0  # For ArcFace
-torch>=1.9.0
-torchvision>=0.10.0
 
-# Face Alignment
-face-alignment>=1.3.0
-
-# Image Processing
-Pillow>=8.0.0
-scikit-image>=0.18.0
-
-# Utilities
-tqdm>=4.60.0
-
-# requirements.txt - Add topology-specific dependencies
-
-# Graph processing
-networkx>=2.6.0
-scipy>=1.7.0
-
-# Visualization
-matplotlib>=3.3.0
-plotly>=5.0.0  # Optional, for interactive visualizations
-
-# requirements.txt - Add database dependencies
-
-# PostgreSQL
+# Persistence / API stack
 psycopg2-binary>=2.9.0
-sqlalchemy>=1.4.0
+sqlalchemy>=2.0.0
 alembic>=1.7.0
-asyncpg>=0.26.0  # For async operations
-
-# Qdrant (Vector Database)
-qdrant-client>=1.1.0
-
-# Redis
+asyncpg>=0.26.0
+qdrant-client>=1.7.0
 redis>=4.3.0
-hiredis>=2.0.0
-
-# Connection Pooling
-pgbouncer>=1.17.0  # For production
-
-# Migration Tools
-alembic>=1.7.0
-
-# Data Validation
-pydantic>=1.10.0
-pydantic-settings>=2.0.0
-
-# Async Support
-asyncio>=3.4.3
-aiofiles>=22.1.0
-
-# requirements.txt - Add API dependencies
-
-# FastAPI
 fastapi>=0.100.0
 uvicorn[standard]>=0.23.0
 python-multipart>=0.0.6
-
-# Authentication
 python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
-python-multipart>=0.0.6
-
-# Data Validation
+bcrypt>=4.0.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
-
-# WebSocket
-websockets>=11.0.0
-
-# Async Support
-asyncio>=3.4.3
-aiofiles>=22.1.0
 httpx>=0.24.0
-
-# Documentation
-markdown>=3.4.0
-pyyaml>=6.0.0
-
-# Monitoring
+aiofiles>=22.1.0
 prometheus-client>=0.17.0
-opentelemetry-api>=1.20.0
-opentelemetry-instrumentation-fastapi>=0.41b0
-
-# Rate Limiting
-slowapi>=0.1.9
-
-# Logging
 structlog>=23.0.0
+slowapi>=0.1.9

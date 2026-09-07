@@ -1,0 +1,24 @@
+name: Deploy
+
+# Intentionally does NOT deploy to a cloud provider.
+# Add real credentials/targets before enabling remote deploy steps.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type deploy to acknowledge manual deploy"
+        required: true
+
+jobs:
+  note:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+            echo "Deploy not confirmed"
+            exit 1
+          fi
+          echo "No remote provider configured. Use docker compose locally:"
+          echo "  docker compose -f docker/docker-compose.yml --profile full up -d --build"

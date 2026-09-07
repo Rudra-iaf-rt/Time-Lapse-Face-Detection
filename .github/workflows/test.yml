@@ -1,0 +1,38 @@
+name: Test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test deps
+        run: |
+          pip install pytest httpx fastapi uvicorn sqlalchemy asyncpg redis qdrant-client python-jose bcrypt pyyaml pydantic pydantic-settings python-multipart aiofiles
+      - name: Run API unit tests
+        run: pytest tests/test_api_unit.py -q
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_API_BASE_URL: http://localhost:8000
+          VITE_WS_URL: ws://localhost:8000/api/ws

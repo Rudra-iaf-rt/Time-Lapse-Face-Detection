@@ -1,4 +1,6 @@
-# config.yaml
+# config.yaml — single authoritative configuration
+# Environment variables override postgres/qdrant/redis connection settings at API startup.
+
 project:
   name: "Multi-Camera Re-ID System"
   version: "3.0.0"
@@ -8,86 +10,61 @@ reid:
   model_path: "models/osnet_x1_0_market_256x128.pth"
   embedding_dim: 512
   input_size: [256, 128]  # height, width
-  device: "cuda"
-  
+  device: "cpu"  # override with cuda when available
+
   matching:
     threshold: 0.55
     max_distance: 0.8
-    gallery_update_rate: 0.1  # weighted average update rate
-    
+    gallery_update_rate: 0.1
+
   quality:
-    min_resolution: [64, 128]  # minimum crop size
+    min_resolution: [64, 128]
     blur_threshold: 1000
     contrast_threshold: 30
 
-# Topology Configuration (NEW)
 topology:
-  max_time_gap: 300.0  # 5 minutes
+  max_time_gap: 300.0
   min_transition_probability: 0.1
   min_observations: 3
-  
   temporal:
     max_time_gap: 300.0
     min_overlap: 0.3
-  
   spatial:
     max_time_gap: 300.0
     min_probability: 0.1
 
-# Fusion Configuration (Update weights)
+face:
+  detector: "mtcnn"
+  embedder: "arcface"
+  model_path: "models/arcface_r100_v1.pth"
+  input_size: [112, 112]
+  min_face_size: 20
+  confidence_threshold: 0.9
+  quality:
+    min_quality: 0.3
+    blur_threshold: 3000
+    contrast_threshold: 30
+  matching:
+    threshold: 0.6
+    max_distance: 0.7
+
+# Single fusion block (duplicate removed)
 fusion:
   weights:
     face: 0.35
     reid: 0.30
     appearance: 0.10
     temporal: 0.10
-    spatial: 0.15  # Increased weight for spatial consistency
-  
+    spatial: 0.15
   thresholds:
     face: 0.6
     reid: 0.55
     fusion: 0.65
-  
   quality:
     min_face: 0.3
     min_reid: 0.3
 
-# Face Configuration (NEW)
-face:
-  detector: "mtcnn"  # Options: mtcnn, retinaface, opencv
-  embedder: "arcface"  # Options: arcface, facenet
-  model_path: "models/arcface_r100_v1.pth"
-  input_size: [112, 112]
-  min_face_size: 20
-  confidence_threshold: 0.9
-  
-  quality:
-    min_quality: 0.3
-    blur_threshold: 3000
-    contrast_threshold: 30
-  
-  matching:
-    threshold: 0.6
-    max_distance: 0.7
-
-# Multimodal Fusion Configuration (NEW)
-fusion:
-  weights:
-    face: 0.40
-    reid: 0.35
-    appearance: 0.15
-    temporal: 0.05
-    spatial: 0.05
-  
-  thresholds:
-    face: 0.6
-    reid: 0.55
-    fusion: 0.65
-  
-  quality:
-    min_face: 0.3
-    min_reid: 0.3
-
+# Legacy SQLite (Streamlit / IdentityStore)
 database:
   path: "database/identities.db"
   reid_table: "reid_profiles"
@@ -95,19 +72,17 @@ database:
 tracker:
   reid_enabled: true
   cache_size: 1000
-  
+
 visualization:
   show_reid_scores: true
   show_face_scores: true
   show_global_ids: true
   crop_display_size: [128, 256]
 
-# config.yaml - Update with database configuration
-
-# Database Configuration
+# Passwords should come from environment in production (POSTGRES_PASSWORD, etc.)
 postgres:
   host: localhost
-  port: 5432
+  port: 5433
   database: multicam_reid
   user: postgres
   password: postgres
@@ -115,7 +90,6 @@ postgres:
   max_overflow: 20
   debug: false
 
-# Qdrant Vector Database
 qdrant:
   host: localhost
   port: 6333
@@ -125,7 +99,6 @@ qdrant:
   reid_collection: reid_embeddings
   appearance_collection: appearance_embeddings
 
-# Redis Cache
 redis:
   host: localhost
   port: 6379
@@ -138,5 +111,3 @@ redis:
   person_ttl: 3600
   websocket_ttl: 60
   cache_ttl: 300
-
-# ... rest of config

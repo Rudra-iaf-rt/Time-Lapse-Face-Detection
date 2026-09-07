@@ -1,22 +1,21 @@
-__pycache__/ 
+# .gitignore for multicam-reid
+__pycache__/
 *.pyc
-venv/ 
+venv/
 .venv/
-*.pt 
-*.pth 
+*.pt
+*.pth
 *.h5
-results/ 
-videos/output/ 
+results/
+videos/output/
 *_crops/
-database/
 *.db
 .ipynb_checkpoints/
-.DS_Store 
+.DS_Store
 *.log
-.idea/ 
+.idea/
 .vscode/
 *.avi
-*.mp4
 *.mkv
 *.flv
 *.mov
@@ -26,10 +25,24 @@ database/
 *.tar
 *.rar
 *.7z
-*.csv
-*.json
-*.xml
-*.xlsx
-*.docx
-*.pptx
-*.pdf
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Keep database Python sources tracked (ignore only local DB files)
+# Note: do not ignore database/*.py
+
+# Build / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/

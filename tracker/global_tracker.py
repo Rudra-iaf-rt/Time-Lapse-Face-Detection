@@ -205,7 +205,7 @@ class CameraWorker:
                     camera_id=self.camera_id,
                     frame_idx=self.frame_idx,
                     bbox=bbox,
-                    conf=float(conf),
+                    confidence=float(conf),
                     crop_path=crop_path,
                 )
 
