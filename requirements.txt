@@ -84,3 +84,13 @@ scikit-image>=0.18.0
 
 # Utilities
 tqdm>=4.60.0
+
+# requirements.txt - Add topology-specific dependencies
+
+# Graph processing
+networkx>=2.6.0
+scipy>=1.7.0
+
+# Visualization
+matplotlib>=3.3.0
+plotly>=5.0.0  # Optional, for interactive visualizations

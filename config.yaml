@@ -1,7 +1,7 @@
 # config.yaml
 project:
   name: "Multi-Camera Re-ID System"
-  version: "2.0.0"
+  version: "3.0.0"
 
 reid:
   model_name: "osnet_x1_0"
@@ -19,6 +19,38 @@ reid:
     min_resolution: [64, 128]  # minimum crop size
     blur_threshold: 1000
     contrast_threshold: 30
+
+# Topology Configuration (NEW)
+topology:
+  max_time_gap: 300.0  # 5 minutes
+  min_transition_probability: 0.1
+  min_observations: 3
+  
+  temporal:
+    max_time_gap: 300.0
+    min_overlap: 0.3
+  
+  spatial:
+    max_time_gap: 300.0
+    min_probability: 0.1
+
+# Fusion Configuration (Update weights)
+fusion:
+  weights:
+    face: 0.35
+    reid: 0.30
+    appearance: 0.10
+    temporal: 0.10
+    spatial: 0.15  # Increased weight for spatial consistency
+  
+  thresholds:
+    face: 0.6
+    reid: 0.55
+    fusion: 0.65
+  
+  quality:
+    min_face: 0.3
+    min_reid: 0.3
 
 # Face Configuration (NEW)
 face:
