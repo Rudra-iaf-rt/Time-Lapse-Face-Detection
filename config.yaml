@@ -101,3 +101,42 @@ visualization:
   show_face_scores: true
   show_global_ids: true
   crop_display_size: [128, 256]
+
+# config.yaml - Update with database configuration
+
+# Database Configuration
+postgres:
+  host: localhost
+  port: 5432
+  database: multicam_reid
+  user: postgres
+  password: postgres
+  pool_size: 10
+  max_overflow: 20
+  debug: false
+
+# Qdrant Vector Database
+qdrant:
+  host: localhost
+  port: 6333
+  vector_size: 512
+  distance: Cosine
+  face_collection: face_embeddings
+  reid_collection: reid_embeddings
+  appearance_collection: appearance_embeddings
+
+# Redis Cache
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  password: null
+  pool_size: 10
+  key_prefix: multicam
+  track_ttl: 300
+  camera_ttl: 60
+  person_ttl: 3600
+  websocket_ttl: 60
+  cache_ttl: 300
+
+# ... rest of config
