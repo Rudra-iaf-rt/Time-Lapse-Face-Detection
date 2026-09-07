@@ -61,3 +61,26 @@ pillow>=8.0.0
 # Optional: For better Re-ID models
 # fastreid  # Uncomment if using fastreid
 # torchreid  # Uncomment if using torchreid
+
+# requirements.txt - Add face-specific dependencies
+
+# Face Detection
+opencv-python>=4.5.0
+mtcnn>=0.1.0
+# retinaface-pytorch  # Optional, uncomment if using RetinaFace
+
+# Face Recognition
+facenet-pytorch>=2.5.2
+insightface>=0.7.0  # For ArcFace
+torch>=1.9.0
+torchvision>=0.10.0
+
+# Face Alignment
+face-alignment>=1.3.0
+
+# Image Processing
+Pillow>=8.0.0
+scikit-image>=0.18.0
+
+# Utilities
+tqdm>=4.60.0

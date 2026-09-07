@@ -1,7 +1,7 @@
 # config.yaml
 project:
   name: "Multi-Camera Re-ID System"
-  version: "1.0.0"
+  version: "2.0.0"
 
 reid:
   model_name: "osnet_x1_0"
@@ -20,6 +20,42 @@ reid:
     blur_threshold: 1000
     contrast_threshold: 30
 
+# Face Configuration (NEW)
+face:
+  detector: "mtcnn"  # Options: mtcnn, retinaface, opencv
+  embedder: "arcface"  # Options: arcface, facenet
+  model_path: "models/arcface_r100_v1.pth"
+  input_size: [112, 112]
+  min_face_size: 20
+  confidence_threshold: 0.9
+  
+  quality:
+    min_quality: 0.3
+    blur_threshold: 3000
+    contrast_threshold: 30
+  
+  matching:
+    threshold: 0.6
+    max_distance: 0.7
+
+# Multimodal Fusion Configuration (NEW)
+fusion:
+  weights:
+    face: 0.40
+    reid: 0.35
+    appearance: 0.15
+    temporal: 0.05
+    spatial: 0.05
+  
+  thresholds:
+    face: 0.6
+    reid: 0.55
+    fusion: 0.65
+  
+  quality:
+    min_face: 0.3
+    min_reid: 0.3
+
 database:
   path: "database/identities.db"
   reid_table: "reid_profiles"
@@ -30,5 +66,6 @@ tracker:
   
 visualization:
   show_reid_scores: true
+  show_face_scores: true
   show_global_ids: true
   crop_display_size: [128, 256]
