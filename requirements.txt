@@ -30,3 +30,34 @@ matplotlib>=3.7.0
 
 # ── Database ───────────────────────────────────────────
 # sqlite3 is in Python stdlib — no install needed
+
+# Re-ID specific
+torch>=1.9.0
+torchvision>=0.10.0
+fastreid  # or use your own implementation
+opencv-python>=4.5.0
+scikit-image>=0.18.0
+numpy>=1.19.0
+scipy>=1.7.0
+
+# Re-ID specific
+scipy>=1.7.0
+numpy>=1.19.0
+
+# Configuration
+pyyaml>=5.4.1
+
+# Database
+# sqlite3 is built-in
+
+# Visualization
+matplotlib>=3.3.0
+seaborn>=0.11.0
+
+# Utilities
+tqdm>=4.60.0
+pillow>=8.0.0
+
+# Optional: For better Re-ID models
+# fastreid  # Uncomment if using fastreid
+# torchreid  # Uncomment if using torchreid

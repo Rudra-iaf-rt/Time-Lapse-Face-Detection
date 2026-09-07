@@ -1,0 +1,34 @@
+# config.yaml
+project:
+  name: "Multi-Camera Re-ID System"
+  version: "1.0.0"
+
+reid:
+  model_name: "osnet_x1_0"
+  model_path: "models/osnet_x1_0_market_256x128.pth"
+  embedding_dim: 512
+  input_size: [256, 128]  # height, width
+  device: "cuda"
+  
+  matching:
+    threshold: 0.55
+    max_distance: 0.8
+    gallery_update_rate: 0.1  # weighted average update rate
+    
+  quality:
+    min_resolution: [64, 128]  # minimum crop size
+    blur_threshold: 1000
+    contrast_threshold: 30
+
+database:
+  path: "database/identities.db"
+  reid_table: "reid_profiles"
+
+tracker:
+  reid_enabled: true
+  cache_size: 1000
+  
+visualization:
+  show_reid_scores: true
+  show_global_ids: true
+  crop_display_size: [128, 256]
