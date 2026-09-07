@@ -198,4 +198,17 @@ class TopologyVisualizer:
                 if i != j and matrix[i, j] > 0.01:
                     text = ax.text(j, i, f'{matrix[i, j]:.2f}',
                                  ha="center", va="center", 
-                                 color="black" if matrix[i, j] < 0.5 else
+                                 color="black" if matrix[i, j] < 0.5 else "white",
+                                 fontsize=8)
+        
+        ax.set_title('Camera Transition Probability Matrix', fontsize=16, fontweight='bold')
+        ax.set_xlabel('Destination Camera', fontsize=12)
+        ax.set_ylabel('Source Camera', fontsize=12)
+        
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            print(f"✅ Transition matrix saved to {save_path}")
+        
+        plt.show()
