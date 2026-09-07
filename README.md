@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
  # 🎯 Multi-Camera Person Tracking & Re-Identification
 
 ![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python)
@@ -369,7 +369,11 @@ If you use this work in academic research, please cite the relevant upstream pap
 ## License
 
 MIT License — see [LICENSE](LICENSE).  
+
 Copyright © 2025 Kunal Gaikwad
 =======
 # Time-Lapse-Face-Detection
->>>>>>> ec47f0a543b95509b8c36d76b89fc791f5e80342
+
+=======
+Copyright © 2025 
+
