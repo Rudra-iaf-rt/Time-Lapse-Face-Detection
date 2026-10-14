@@ -6,6 +6,24 @@ from contextlib import asynccontextmanager
 import logging
 import sys
 import os
+from pathlib import Path
+
+def _load_dotenv(path: str) -> None:
+    try:
+        with open(path, "r", encoding="utf-8") as env_file:
+            for raw_line in env_file:
+                line = raw_line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                os.environ.setdefault(key, value)
+    except FileNotFoundError:
+        pass
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+_load_dotenv(str(_PROJECT_ROOT / ".env"))
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { api, ApiError } from '@/api/client'
-import { PageHeader, Panel, LoadingState, ErrorState } from '@/components/ui'
 import type { ReadyStatus } from '@/types'
+import { PageHeader, Panel, LoadingState, ErrorState, KeyValueList, StatCard } from '@/components/ui'
 
 export function SystemHealthPage() {
-  const [health, setHealth] = useState<unknown>(null)
+  const [health, setHealth] = useState<Record<string, unknown> | null>(null)
   const [ready, setReady] = useState<ReadyStatus | null>(null)
-  const [live, setLive] = useState<unknown>(null)
+  const [live, setLive] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -14,8 +14,8 @@ export function SystemHealthPage() {
     ;(async () => {
       try {
         const [h, l] = await Promise.all([api.health(), api.live()])
-        setHealth(h)
-        setLive(l)
+        setHealth(h as Record<string, unknown>)
+        setLive(l as Record<string, unknown>)
         try {
           setReady(await api.ready())
         } catch (e) {
@@ -33,23 +33,27 @@ export function SystemHealthPage() {
     })()
   }, [])
 
+  const readyDependencies = ready?.dependencies
+
   return (
     <div>
       <PageHeader title="System Health" subtitle="/health, /live, and /ready probes." />
       {error ? <ErrorState message={error} /> : null}
       {loading ? <LoadingState /> : null}
+      <div className="mb-4 grid gap-4 sm:grid-cols-3">
+        <StatCard label="Overall" value={ready?.status ?? 'unknown'} tone={ready?.status === 'ready' ? 'ok' : 'warn'} />
+        <StatCard label="PostgreSQL" value={readyDependencies?.postgresql ?? 'unknown'} />
+        <StatCard label="Redis" value={readyDependencies?.redis ?? 'unknown'} />
+      </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <Panel>
-          <h3 className="font-medium mb-2">/live</h3>
-          <pre className="text-xs">{JSON.stringify(live, null, 2)}</pre>
+        <Panel title="/live">
+          <KeyValueList data={live} />
         </Panel>
-        <Panel>
-          <h3 className="font-medium mb-2">/health</h3>
-          <pre className="text-xs overflow-auto">{JSON.stringify(health, null, 2)}</pre>
+        <Panel title="/health">
+          <KeyValueList data={health} />
         </Panel>
-        <Panel>
-          <h3 className="font-medium mb-2">/ready</h3>
-          <pre className="text-xs overflow-auto">{JSON.stringify(ready, null, 2)}</pre>
+        <Panel title="/ready">
+          <KeyValueList data={(ready as unknown as Record<string, unknown>) || null} />
         </Panel>
       </div>
     </div>

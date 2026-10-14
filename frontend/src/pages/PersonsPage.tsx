@@ -1,21 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '@/api/client'
 import type { PersonRow } from '@/types'
-import { PageHeader, Panel, LoadingState, ErrorState, EmptyState } from '@/components/ui'
+import { PageHeader, Panel, LoadingState, ErrorState, EmptyState, DataTable, Pagination } from '@/components/ui'
 
 export function PersonsPage() {
   const [items, setItems] = useState<PersonRow[]>([])
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
+  const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const perPage = 20
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  async function load(q?: string) {
+  const load = useCallback(async (nextPage = page, nextQuery = query) => {
     setLoading(true)
     setError(null)
     try {
-      const res = await api.listPersons(1, 50, q)
+      const res = await api.listPersons(nextPage, perPage, nextQuery.trim() || undefined)
       setItems(res.data?.items || [])
       setTotal(res.data?.total || 0)
     } catch (e) {
@@ -23,74 +26,61 @@ export function PersonsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, query])
 
   useEffect(() => {
-    void load()
-  }, [])
+    void load(page, query)
+  }, [page, query, load])
 
   return (
     <div>
       <PageHeader
         title="Persons"
-        subtitle="Canonical identifier is global_id (e.g. PERSON_0007)."
+        subtitle="Canonical identifier is global_id. Filter, browse, and manage identities."
         actions={
           <form
-            className="flex gap-2"
+            className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row"
             onSubmit={(e) => {
               e.preventDefault()
-              void load(search.trim() || undefined)
+              setPage(1)
+              setQuery(search.trim())
             }}
           >
             <input
-              className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[var(--line)] px-3 py-2 text-sm sm:w-64"
               placeholder="Filter global_id"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button type="submit" className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm text-white">
+            <button type="submit" className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm text-white">
               Search
             </button>
           </form>
         }
       />
       {error ? <ErrorState message={error} /> : null}
-      <Panel>
-        {loading ? <LoadingState /> : null}
+      <Panel title="Identity records">
+        {loading ? <LoadingState label="Loading persons…" /> : null}
         {!loading && items.length === 0 ? (
           <EmptyState title="No persons found" detail="Pipeline output populates IdentityStore." />
         ) : (
           <>
-            <div className="text-sm text-[var(--ink-muted)] mb-3">{total} identities</div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[var(--ink-muted)] border-b border-[var(--line)]">
-                  <th className="py-2">global_id</th>
-                  <th>Status</th>
-                  <th>Last camera</th>
-                  <th>Last seen</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((p) => (
-                  <tr key={p.global_id} className="border-b border-[var(--line)]/60">
-                    <td className="py-2 font-medium">{p.global_id}</td>
-                    <td>{p.status || '—'}</td>
-                    <td>{String(p.last_camera ?? '—')}</td>
-                    <td>{String(p.last_seen ?? '—')}</td>
-                    <td className="text-right">
-                      <Link to={`/persons/${p.global_id}`} className="text-[var(--accent)] underline">
-                        Detail
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="mb-3 text-sm text-[var(--ink-muted)]">
+              Showing {items.length} of {total.toLocaleString()} identities
+            </div>
+            <DataTable
+              rows={items as Array<Record<string, unknown>>}
+              columns={['global_id', 'status', 'last_camera', 'last_seen', 'confidence']}
+            />
+            <Pagination page={page} perPage={perPage} total={total} onChange={setPage} />
           </>
         )}
       </Panel>
+      <div className="mt-4">
+        <Link to="/search" className="text-sm text-[var(--accent)] underline">
+          Advanced search
+        </Link>
+      </div>
     </div>
   )
 }

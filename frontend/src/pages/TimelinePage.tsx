@@ -1,6 +1,24 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/api/client'
-import { PageHeader, Panel, LoadingState, ErrorState, EmptyState } from '@/components/ui'
+import { PageHeader, Panel, LoadingState, ErrorState, EmptyState, DataTable, KeyValueList } from '@/components/ui'
+
+function extractEvents(data: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(data)) return data as Array<Record<string, unknown>>
+  if (data && typeof data === 'object') {
+    const obj = data as Record<string, unknown>
+    for (const key of ['events', 'sightings', 'sqlite_events', 'rows', 'results', 'items']) {
+      if (Array.isArray(obj[key])) return obj[key] as Array<Record<string, unknown>>
+    }
+  }
+  return []
+}
+
+function extractSummary(data: unknown): Record<string, unknown> | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null
+  const obj = data as Record<string, unknown>
+  const summary = Object.fromEntries(Object.entries(obj).filter(([, value]) => !Array.isArray(value)))
+  return Object.keys(summary).length ? summary : null
+}
 
 export function TimelinePage() {
   const [globalId, setGlobalId] = useState('')
@@ -24,7 +42,6 @@ export function TimelinePage() {
   }
 
   useEffect(() => {
-    // Prefill from first person if available
     api
       .listPersons(1, 1)
       .then((r) => {
@@ -37,10 +54,13 @@ export function TimelinePage() {
       .catch(() => undefined)
   }, [])
 
+  const rows = extractEvents(data)
+  const summary = extractSummary(data)
+
   return (
     <div>
       <PageHeader title="Timeline" subtitle="Camera journey and sightings for a global_id." />
-      <Panel className="mb-4">
+      <Panel className="mb-4" title="Load timeline">
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -49,24 +69,25 @@ export function TimelinePage() {
           }}
         >
           <input
-            className="rounded-lg border px-3 py-2 text-sm flex-1"
+            className="flex-1 rounded-lg border border-[var(--line)] px-3 py-2 text-sm"
             value={globalId}
             onChange={(e) => setGlobalId(e.target.value)}
-            placeholder="PERSON_0007"
+            placeholder="PERSON_DB5270AE"
           />
-          <button type="submit" className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm text-white">
+          <button type="submit" className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm text-white">
             Load
           </button>
         </form>
       </Panel>
       {error ? <ErrorState message={error} /> : null}
-      <Panel>
+      <Panel title="Journey">
         {loading ? <LoadingState /> : null}
         {!loading && !data ? <EmptyState title="No timeline loaded" /> : null}
-        {data ? (
-          <pre className="text-xs overflow-auto bg-[var(--bg-elevated)] p-3 rounded-lg max-h-[32rem]">
-            {JSON.stringify(data, null, 2)}
-          </pre>
+        {!loading && rows.length ? <DataTable rows={rows} /> : null}
+        {!loading && summary ? (
+          <div className="mt-4">
+            <KeyValueList data={summary} />
+          </div>
         ) : null}
       </Panel>
     </div>

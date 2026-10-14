@@ -1,23 +1,23 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/api/client'
 import { useAuth } from '@/store/auth'
-import { PageHeader, Panel, LoadingState, ErrorState, EmptyState } from '@/components/ui'
+import { PageHeader, Panel, LoadingState, ErrorState, EmptyState, KeyValueList } from '@/components/ui'
 
 export function AdminPage() {
   const { role } = useAuth()
-  const [detail, setDetail] = useState<unknown>(null)
-  const [stats, setStats] = useState<unknown>(null)
+  const [detail, setDetail] = useState<Record<string, unknown> | null>(null)
+  const [stats, setStats] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
-      api.adminHealth().catch((e) => ({ error: e.message })),
-      api.identityStats().catch((e) => ({ error: e.message })),
+      api.adminHealth().catch((e) => ({ error: e instanceof Error ? e.message : 'Admin health unavailable' })),
+      api.identityStats().catch((e) => ({ error: e instanceof Error ? e.message : 'Identity stats unavailable' })),
     ])
       .then(([d, s]) => {
-        setDetail('data' in d ? d.data : d)
-        setStats('data' in s ? s.data : s)
+        setDetail(('data' in d ? (d.data as Record<string, unknown>) : (d as Record<string, unknown>)) || null)
+        setStats(('data' in s ? (s.data as Record<string, unknown>) : (s as Record<string, unknown>)) || null)
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Admin endpoints failed'))
       .finally(() => setLoading(false))
@@ -32,25 +32,11 @@ export function AdminPage() {
       {error ? <ErrorState message={error} /> : null}
       {loading ? <LoadingState /> : null}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel>
-          <h3 className="font-medium mb-2">Health detail</h3>
-          {detail ? (
-            <pre className="text-xs overflow-auto bg-[var(--bg-elevated)] p-3 rounded-lg max-h-96">
-              {JSON.stringify(detail, null, 2)}
-            </pre>
-          ) : (
-            <EmptyState title="No admin health payload" />
-          )}
+        <Panel title="Health detail">
+          {detail ? <KeyValueList data={detail} /> : <EmptyState title="No admin health payload" />}
         </Panel>
-        <Panel>
-          <h3 className="font-medium mb-2">IdentityStore stats</h3>
-          {stats ? (
-            <pre className="text-xs overflow-auto bg-[var(--bg-elevated)] p-3 rounded-lg max-h-96">
-              {JSON.stringify(stats, null, 2)}
-            </pre>
-          ) : (
-            <EmptyState title="No stats" />
-          )}
+        <Panel title="IdentityStore stats">
+          {stats ? <KeyValueList data={stats} /> : <EmptyState title="No stats" />}
         </Panel>
       </div>
     </div>
