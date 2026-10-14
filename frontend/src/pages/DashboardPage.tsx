@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '@/api/client'
-import { PageHeader, Panel, LoadingState, ErrorState, EmptyState, StatCard, DataTable, KeyValueList, Toast } from '@/components/ui'
+import { PageHeader, Panel, LoadingState, ErrorState, EmptyState, StatCard, DataTable, KeyValueList, PersonImage, Toast } from '@/components/ui'
 import type { PersonRow } from '@/types'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useAuth } from '@/store/auth'
@@ -16,28 +16,34 @@ export function DashboardPage() {
   const [toast] = useState<string | null>(null)
   const { status, events } = useWebSocket(`${username || 'operator'}-dash`)
 
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const [p, s] = await Promise.all([
-          api.listPersons(1, 8),
-          api.analyticsSummary().catch(() => null),
-        ])
-        if (cancelled) return
-        setPersons(p.data?.items || [])
-        setTotal(p.data?.total || 0)
-        setStats((s?.data as Record<string, unknown>) || null)
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load dashboard')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-    return () => {
-      cancelled = true
+  const load = useCallback(async () => {
+    try {
+      setError(null)
+      const [p, s] = await Promise.all([
+        api.listPersons(1, 8),
+        api.analyticsSummary().catch(() => null),
+      ])
+      setPersons(p.data?.items || [])
+      setTotal(p.data?.total || 0)
+      setStats((s?.data as Record<string, unknown>) || null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load dashboard')
+    } finally {
+      setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  useEffect(() => {
+    if (!events.length) return
+    const timer = window.setTimeout(() => {
+      void load()
+    }, 1500)
+    return () => window.clearTimeout(timer)
+  }, [events, load])
 
   return (
     <div>
@@ -60,7 +66,7 @@ export function DashboardPage() {
           {!loading && persons.length === 0 ? (
             <EmptyState
               title="No identities yet"
-              detail="Run the sample pipeline or wait for detections. Streamlit SQLite data appears here when present."
+              detail="Run a camera runtime or the sample pipeline. Streamlit SQLite data appears here when present."
             />
           ) : (
             <DataTable
@@ -78,17 +84,19 @@ export function DashboardPage() {
           ) : null}
         </Panel>
 
-        <Panel title="Live events">
-          <div className="mb-3 text-xs text-[var(--ink-muted)]">WebSocket: {status}</div>
+        <Panel title="Live arrivals">
           {events.length === 0 ? (
-            <EmptyState title="No live events" detail="Connects to VITE_WS_URL. Events appear only when the backend broadcasts them." />
+            <EmptyState title="No live arrivals" detail="Events appear when a camera runtime detects a person." />
           ) : (
             <ul className="max-h-80 space-y-2 overflow-auto text-sm">
-              {events.slice(0, 12).map((ev, i) => (
-                <li key={`${ev.event}-${i}`} className="rounded-md bg-[var(--bg-elevated)] px-3 py-2">
-                  <div className="font-medium">{ev.event}</div>
-                  <div className="mt-1 text-xs text-[var(--ink-muted)]">
-                    {ev.global_id || '—'} · {String(ev.camera_id ?? '—')} · {ev.timestamp || '—'}
+              {events.slice(0, 8).map((ev, i) => (
+                <li key={`${ev.event}-${i}`} className="flex gap-2 rounded-md bg-[var(--bg-elevated)] px-2 py-2">
+                  <PersonImage src={ev.crop_url ? String(ev.crop_url) : null} alt={String(ev.global_id || 'event')} className="h-12 w-12 flex-none" />
+                  <div className="min-w-0">
+                    <div className="font-medium">{ev.global_id || ev.event}</div>
+                    <div className="mt-1 text-xs text-[var(--ink-muted)]">
+                      {ev.event} · camera {String(ev.camera_id ?? '—')} · {ev.timestamp || '—'}
+                    </div>
                   </div>
                 </li>
               ))}

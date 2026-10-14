@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 function classNames(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ')
@@ -88,6 +88,43 @@ export function LoadingState({ label = 'Loading…' }: { label?: string }) {
       <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--accent)]" />
       {label}
     </div>
+  )
+}
+
+export function PersonImage({
+  src,
+  alt = 'Person crop',
+  className = '',
+}: {
+  src?: string | null
+  alt?: string
+  className?: string
+}) {
+  const [failed, setFailed] = useState(false)
+  const base = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+  const url = src ? `${base}${src.startsWith('/') ? src : `/${src}`}` : ''
+
+  if (!src || failed) {
+    return (
+      <div
+        className={classNames(
+          'flex items-center justify-center rounded-lg border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] text-xs text-[var(--ink-muted)]',
+          className,
+        )}
+      >
+        No image
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={url}
+      alt={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className={classNames('rounded-lg object-cover', className)}
+    />
   )
 }
 

@@ -1,6 +1,6 @@
 import { useAuth } from '@/store/auth'
 import { useWebSocket } from '@/hooks/useWebSocket'
-import { PageHeader, Panel, EmptyState } from '@/components/ui'
+import { PageHeader, Panel, EmptyState, PersonImage } from '@/components/ui'
 
 export function LiveMonitoringPage() {
   const { username } = useAuth()
@@ -34,11 +34,25 @@ export function LiveMonitoringPage() {
         ) : (
           <ul className="space-y-2">
             {events.map((ev, idx) => (
-              <li key={idx} className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm">
-                <div className="font-medium">{ev.event}</div>
-                <div className="text-[var(--ink-muted)] text-xs mt-1">
-                  global_id={ev.global_id || '—'} · camera_id={String(ev.camera_id ?? '—')} ·{' '}
-                  {ev.timestamp}
+              <li key={idx} className="flex gap-3 rounded-lg border border-[var(--line)] px-3 py-2 text-sm">
+                {ev.crop_url ? (
+                  <PersonImage src={String(ev.crop_url)} alt={String(ev.global_id || 'event')} className="h-14 w-14 flex-none" />
+                ) : (
+                  <div className="flex h-14 w-14 flex-none items-center justify-center rounded-lg border border-dashed border-[var(--line)] text-xs text-[var(--ink-muted)]">
+                    No image
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="font-medium">{ev.event}</div>
+                  <div className="mt-1 text-xs text-[var(--ink-muted)]">
+                    global_id={ev.global_id || '—'} · camera_id={String(ev.camera_id ?? '—')} ·{' '}
+                    {ev.timestamp || '—'}
+                  </div>
+                  {ev.confidence != null ? (
+                    <div className="mt-1 text-xs text-[var(--ink-muted)]">
+                      confidence={Number(ev.confidence).toFixed(2)}
+                    </div>
+                  ) : null}
                 </div>
               </li>
             ))}

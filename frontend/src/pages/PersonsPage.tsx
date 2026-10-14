@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '@/api/client'
 import type { PersonRow } from '@/types'
-import { PageHeader, Panel, LoadingState, ErrorState, EmptyState, DataTable, Pagination } from '@/components/ui'
+import { PageHeader, Panel, LoadingState, ErrorState, EmptyState, Pagination, PersonImage } from '@/components/ui'
 
 export function PersonsPage() {
   const [items, setItems] = useState<PersonRow[]>([])
@@ -68,10 +68,38 @@ export function PersonsPage() {
             <div className="mb-3 text-sm text-[var(--ink-muted)]">
               Showing {items.length} of {total.toLocaleString()} identities
             </div>
-            <DataTable
-              rows={items as Array<Record<string, unknown>>}
-              columns={['global_id', 'status', 'last_camera', 'last_seen', 'confidence']}
-            />
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-max text-sm">
+                <thead>
+                  <tr className="text-left text-[var(--ink-muted)]">
+                    <th className="border-b border-[var(--line)] px-3 py-2">Image</th>
+                    <th className="border-b border-[var(--line)] px-3 py-2">global_id</th>
+                    <th className="border-b border-[var(--line)] px-3 py-2">Status</th>
+                    <th className="border-b border-[var(--line)] px-3 py-2">Last camera</th>
+                    <th className="border-b border-[var(--line)] px-3 py-2">Last seen</th>
+                    <th className="border-b border-[var(--line)] px-3 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((p) => (
+                    <tr key={p.global_id} className="border-b border-[var(--line)]/60 hover:bg-[var(--bg-elevated)]/60">
+                      <td className="px-3 py-2">
+                        <PersonImage src={p.best_crop_url} alt={p.global_id} className="h-12 w-12" />
+                      </td>
+                      <td className="px-3 py-2 font-medium">{p.global_id}</td>
+                      <td className="px-3 py-2">{p.status || '—'}</td>
+                      <td className="px-3 py-2">{String(p.last_camera ?? '—')}</td>
+                      <td className="px-3 py-2">{String(p.last_seen ?? '—')}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Link to={`/persons/${p.global_id}`} className="text-[var(--accent)] underline">
+                          Detail
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <Pagination page={page} perPage={perPage} total={total} onChange={setPage} />
           </>
         )}

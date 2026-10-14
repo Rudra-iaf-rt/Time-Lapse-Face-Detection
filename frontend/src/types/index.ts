@@ -14,6 +14,16 @@ export interface ApiEnvelope<T = unknown> {
   timestamp?: string
 }
 
+export interface PersonImageRow {
+  sighting_id?: number
+  camera_id?: string | number
+  timestamp?: string | number
+  frame_idx?: number
+  confidence?: number
+  crop_path?: string
+  crop_url?: string
+}
+
 export interface PersonRow {
   global_id: string
   status?: string
@@ -22,6 +32,8 @@ export interface PersonRow {
   last_camera?: string | number
   confidence?: number
   notes?: string
+  best_crop_path?: string
+  best_crop_url?: string
   [key: string]: unknown
 }
 

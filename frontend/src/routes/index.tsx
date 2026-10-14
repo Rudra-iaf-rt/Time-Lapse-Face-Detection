@@ -23,6 +23,13 @@ function Protected({ children }: { children: ReactNode }) {
   return children
 }
 
+function RequireRole({ roles, children }: { roles: string[]; children: ReactNode }) {
+  const { role, isAuthenticated } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (!role || !roles.includes(role)) return <Navigate to="/" replace />
+  return children
+}
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -47,7 +54,14 @@ export function AppRoutes() {
         <Route path="anomalies" element={<AnomaliesPage />} />
         <Route path="crowd" element={<CrowdPage />} />
         <Route path="health" element={<SystemHealthPage />} />
-        <Route path="admin" element={<AdminPage />} />
+        <Route
+          path="admin"
+          element={
+            <RequireRole roles={['ADMIN']}>
+              <AdminPage />
+            </RequireRole>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

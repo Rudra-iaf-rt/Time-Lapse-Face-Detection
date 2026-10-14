@@ -29,6 +29,19 @@ from database.identity_store import IdentityStore
 router = APIRouter()
 
 
+def _media_url_for_crop(path: Optional[str]) -> Optional[str]:
+    if not path:
+        return None
+    value = str(path).replace("\\", "/").strip()
+    if value.startswith("/results/"):
+        value = value[len("/results/"):]
+    elif value.startswith("results/"):
+        value = value[len("results/"):]
+    value = value.lstrip("/")
+    if not value or ".." in value.split("/"):
+        return None
+    return f"/media/results/{value}"
+
 class NoteBody(BaseModel):
     note: str = Field(..., min_length=1, max_length=4000)
 
@@ -93,6 +106,7 @@ async def get_person(
         "global_id": global_id,
         "postgres": person,
         "identity_store": sqlite_person,
+        "primary_image_url": _media_url_for_crop((sqlite_person or {}).get("best_crop_path")),
     }
     if status_map.get("redis") == "ok" and redis is not None:
         try:
@@ -100,6 +114,41 @@ async def get_person(
         except Exception:
             pass
     return ResponseModel(success=True, data=data)
+
+
+@router.get("/persons/{global_id}/images", response_model=ResponseModel)
+async def get_person_images(
+    global_id: str,
+    limit: int = Query(24, gt=0, le=200),
+    store: IdentityStore = Depends(get_identity_store),
+    _: UserPublic = Depends(get_current_user),
+):
+    sqlite_person = store.get_person(global_id)
+    if not sqlite_person:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Person {global_id} not found")
+    sightings = store.get_sightings(global_id, limit=limit)
+    items = []
+    for sighting in sightings:
+        items.append(
+            {
+                "sighting_id": sighting.get("id"),
+                "camera_id": sighting.get("camera_id"),
+                "frame_idx": sighting.get("frame_idx"),
+                "timestamp": sighting.get("timestamp"),
+                "confidence": sighting.get("confidence"),
+                "crop_path": sighting.get("crop_path"),
+                "crop_url": _media_url_for_crop(sighting.get("crop_path")),
+            }
+        )
+    return ResponseModel(
+        success=True,
+        data={
+            "global_id": global_id,
+            "primary_image_url": _media_url_for_crop(sqlite_person.get("best_crop_path")),
+            "total": len(items),
+            "images": items,
+        },
+    )
 
 
 @router.put("/persons/{global_id}", response_model=ResponseModel)
@@ -141,6 +190,8 @@ async def list_persons(
             conf = row.get("confidence") or row.get("match_score")
             if min_confidence is not None and conf is not None and float(conf) < min_confidence:
                 continue
+            row = dict(row)
+            row["best_crop_url"] = _media_url_for_crop(row.get("best_crop_path"))
             items.append(row)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"IdentityStore list failed: {exc}") from exc

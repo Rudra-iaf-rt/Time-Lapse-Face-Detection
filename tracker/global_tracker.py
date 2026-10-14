@@ -81,6 +81,7 @@ class CameraWorker:
         save_video: bool    = True,
         save_crops: bool    = True,
         device: str         = "cpu",
+        roi: Optional[List[int]] = None,
     ):
         self.source      = source
         self.camera_id   = camera_id
@@ -93,6 +94,8 @@ class CameraWorker:
         self.save_video  = save_video
         self.save_crops  = save_crops
         self.device      = device
+        self.roi = roi
+        self.runtime_status: Optional[Dict] = None
 
         self.crops_dir = self.output_dir / f"cam{camera_id}_crops"
         if save_crops:
@@ -111,20 +114,60 @@ class CameraWorker:
         """Process video synchronously (for file-based offline use)."""
         self.running = True
         all_tracks = {}
-        cap, writer = self._open_source()
-
+        try:
+            cap, writer = self._open_source()
+        except Exception as exc:
+            if self.runtime_status is not None:
+                self.runtime_status["running"] = False
+                self.runtime_status["error"] = str(exc)
+            self.running = False
+            return all_tracks
         print(f"[Cam {self.camera_id}] Starting  source={self.source}")
         while self.running:
             ret, frame = cap.read()
             if not ret:
+                if self.runtime_status is not None:
+                    self.runtime_status["running"] = False
+                    self.runtime_status["error"] = "Frame read failed"
                 break
             result = self._process_frame(frame, writer)
             all_tracks[self.frame_idx - 1] = result
+
+            if self.runtime_status is not None:
+                self.runtime_status["frames_read"] = self.frame_idx
+                self.runtime_status["last_frame_at"] = time.time()
+                self.runtime_status["last_global_ids"] = [d.get("global_id") for d in result if d.get("global_id")]
+                self.runtime_status["running"] = True
+                self.runtime_status["error"] = None
+                if self.runtime_status.get("width") is None:
+                    self.runtime_status["width"] = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0) or None
+                    self.runtime_status["height"] = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0) or None
+                    self.runtime_status["fps"] = cap.get(cv2.CAP_PROP_FPS) or None
+
+            event_queue = None
+            if self.runtime_status is not None:
+                event_queue = self.runtime_status.get("_events")
+            if event_queue is not None:
+                for d in result:
+                    event_queue.put(
+                        {
+                            "event": "person_identified" if d.get("is_new") else ("person_reappeared" if d.get("was_lost") else "person_detected"),
+                            "timestamp": time.time(),
+                            "global_id": d.get("global_id"),
+                            "camera_id": self.camera_id,
+                            "track_id": d.get("track_id"),
+                            "confidence": d.get("conf"),
+                            "crop_path": d.get("crop_path"),
+                            "crop_url": ("/media/results/" + str(d.get("crop_path")).replace("\\", "/").split("results/", 1)[-1]) if d.get("crop_path") else None,
+                        }
+                    )
 
         cap.release()
         if writer:
             writer.release()
         self.running = False
+        if self.runtime_status is not None:
+            self.runtime_status["running"] = False
         print(f"[Cam {self.camera_id}] Done  ({self.frame_idx} frames)")
         return all_tracks
 
@@ -175,6 +218,12 @@ class CameraWorker:
                     min(w, int(box[2])), min(h, int(box[3]))
                 )
                 crop = frame[y1:y2, x1:x2]
+                if self.roi:
+                    rx1, ry1, rx2, ry2 = self.roi
+                    cx = (x1 + x2) // 2
+                    cy = (y1 + y2) // 2
+                    if not (rx1 <= cx <= rx2 and ry1 <= cy <= ry2):
+                        continue
                 if crop.size > 100:
                     crops.append(crop)
                     valid.append((tid, conf, [x1, y1, x2, y2], crop))

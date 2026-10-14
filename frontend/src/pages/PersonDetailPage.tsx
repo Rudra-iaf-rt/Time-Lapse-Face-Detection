@@ -10,12 +10,15 @@ import {
   Toast,
   KeyValueList,
   DataTable,
+  PersonImage,
 } from '@/components/ui'
-
+import type { PersonImageRow } from '@/types'
 export function PersonDetailPage() {
   const { globalId = '' } = useParams()
   const [data, setData] = useState<unknown>(null)
   const [timeline, setTimeline] = useState<Record<string, unknown> | null>(null)
+  const [images, setImages] = useState<PersonImageRow[]>([])
+  const [primaryImage, setPrimaryImage] = useState<string | null>(null)
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -26,12 +29,16 @@ export function PersonDetailPage() {
     setLoading(true)
     setError(null)
     try {
-      const [person, tl] = await Promise.all([
+      const [person, tl, img] = await Promise.all([
         api.getPerson(globalId),
         api.personTimeline(globalId).catch(() => null),
+        api.personImages(globalId, 24).catch(() => null),
       ])
       setData(person.data)
       setTimeline((tl?.data as Record<string, unknown>) || null)
+      const payload = img?.data as { primary_image_url?: string; images?: PersonImageRow[] } | null
+      setImages(payload?.images || [])
+      setPrimaryImage(payload?.primary_image_url || (person.data as { primary_image_url?: string })?.primary_image_url || null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load person')
     } finally {
@@ -112,6 +119,36 @@ export function PersonDetailPage() {
       />
       {error ? <ErrorState message={error} /> : null}
       {loading ? <LoadingState /> : null}
+
+      <Panel title="Identified person">
+        <div className="grid gap-4 md:grid-cols-[220px_1fr]">
+          <PersonImage src={primaryImage} className="h-64 w-full" />
+          <div className="text-sm">
+            <div className="mb-2 text-lg font-semibold text-[var(--ink)]">{globalId}</div>
+            <div className="text-[var(--ink-muted)]">
+              Primary camera crop from the sighting that identified this person.
+            </div>
+            <div className="mt-4">
+              {images.length ? `${images.length} captured sighting images` : 'No sighting images available'}
+            </div>
+          </div>
+        </div>
+      </Panel>
+
+      {images.length ? (
+        <Panel title="Sighting images" className="mb-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {images.map((img, idx) => (
+              <div key={`${img.sighting_id ?? idx}`} className="space-y-1">
+                <PersonImage src={img.crop_url} alt={`Sighting ${idx + 1}`} className="h-28 w-full" />
+                <div className="text-xs text-[var(--ink-muted)]">
+                  Camera {String(img.camera_id ?? '—')} · {String(img.timestamp ?? '—')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Identity">

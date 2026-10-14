@@ -15,6 +15,7 @@ from api.dependencies.database import (
 from api.dependencies.auth import require_roles, Role, UserPublic
 from database.identity_store import IdentityStore
 from database.migrations import migration_status_message
+from pathlib import Path
 
 router = APIRouter()
 
@@ -62,6 +63,27 @@ async def flush_person_cache(
         raise HTTPException(status_code=503, detail="Redis unavailable")
     await redis.cache_delete(f"person:{global_id}")
     return ResponseModel(success=True, message=f"Cache flush requested for {global_id}")
+
+
+@router.get("/admin/model-status", response_model=ResponseModel)
+async def model_status(_: UserPublic = Depends(require_roles(Role.ADMIN, Role.OPERATOR, Role.VIEWER))):
+    root = Path(__file__).resolve().parents[2]
+    files = {
+        "yolov8n_pt": root / "yolov8n.pt",
+        "osnet_x1_0_pth": root / "models" / "osnet_x1_0.pth",
+        "arcface_weights": root / "models" / "arcface.pth",
+    }
+    return ResponseModel(
+        success=True,
+        data={
+            "detection": "YOLOv8",
+            "reid": "MobileNetV3 fallback (OSNet when weights are present)",
+            "face": "ArcFace when weights are present",
+            "files": {name: path.exists() for name, path in files.items()},
+            "path_note": "Place optional production weights under models/",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        },
+    )
 
 
 @router.get("/admin/users/me", response_model=ResponseModel)

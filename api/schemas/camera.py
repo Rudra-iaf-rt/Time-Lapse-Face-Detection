@@ -9,6 +9,11 @@ class CameraBase(BaseModel):
     name: str = Field(..., description="Camera name")
     location: Optional[str] = Field(None, description="Camera location")
     capacity: int = Field(100, gt=0, description="Camera capacity")
+    source_type: Optional[str] = Field(None, description="webcam, rtsp, http, file")
+    source_uri: Optional[str] = Field(None, description="0, rtsp://..., /path/video.mp4")
+    fps_target: Optional[int] = Field(None, gt=0, le=60)
+    frame_skip: Optional[int] = Field(None, ge=0, le=30)
+    roi: Optional[List[int]] = Field(None, description="[x1, y1, x2, y2] region of interest")
 
 class CameraCreate(CameraBase):
     """Camera creation schema."""

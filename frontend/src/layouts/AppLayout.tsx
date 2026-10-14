@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '@/store/auth'
 import { useEffect, useState } from 'react'
-import { api } from '@/api/client'
+import { api, ApiError } from '@/api/client'
 
 const NAV = [
   { to: '/', label: 'Dashboard' },
@@ -23,11 +23,26 @@ export function AppLayout() {
   const [ready, setReady] = useState<string>('checking')
 
   useEffect(() => {
-    api
-      .ready()
-      .then((r) => setReady(r.status))
-      .catch(() => setReady('unreachable'))
+    ;(async () => {
+      try {
+        await api.health()
+        try {
+          const r = await api.ready()
+          setReady(r.status || 'ready')
+        } catch (e) {
+          if (e instanceof ApiError && e.body && typeof e.body === 'object' && 'status' in e.body) {
+            setReady(String((e.body as { status: string }).status))
+          } else {
+            setReady('degraded')
+          }
+        }
+      } catch {
+        setReady('unreachable')
+      }
+    })()
   }, [])
+
+  const visibleNav = NAV.filter((item) => item.to !== '/admin' || role === 'ADMIN')
 
   return (
     <div className="min-h-screen grid grid-cols-[240px_1fr]">
@@ -37,7 +52,7 @@ export function AppLayout() {
           <h1 className="text-xl font-semibold mt-1 leading-tight">MultiCam Re-ID</h1>
         </div>
         <nav className="flex flex-col gap-1 text-sm">
-          {NAV.map((item) => (
+          {visibleNav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

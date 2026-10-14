@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 import logging
 import sys
 import os
+import asyncio
+from camera.runtime import RUNTIME_EVENT_QUEUE
 from pathlib import Path
 
 def _load_dotenv(path: str) -> None:
@@ -29,6 +31,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordRequestForm
 import uvicorn
 
@@ -56,9 +59,36 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting FastAPI application...")
+    jwt_secret = os.environ.get("JWT_SECRET")
+    if not jwt_secret or jwt_secret in {"change-me", "change-me-to-a-long-random-string"}:
+        logger.warning("JWT_SECRET is using an insecure default. Set a strong secret before production.")
+    if os.environ.get("ADMIN_PASSWORD") in {None, "", "change-me", "admin-change-me"}:
+        logger.warning("ADMIN_PASSWORD is using a development default. Change it before production.")
     await init_db()
+
+    async def _event_pump():
+        from api.routes.websocket import manager
+
+        while True:
+            await asyncio.sleep(0.1)
+            while not RUNTIME_EVENT_QUEUE.empty():
+                try:
+                    event = RUNTIME_EVENT_QUEUE.get_nowait()
+                except Exception:
+                    break
+                try:
+                    await manager.broadcast(event)
+                except Exception as exc:
+                    logger.warning("WebSocket broadcast failed: %s", exc)
+
+    pump_task = asyncio.create_task(_event_pump())
     logger.info("Startup complete (check /ready for dependency status)")
     yield
+    pump_task.cancel()
+    try:
+        await pump_task
+    except asyncio.CancelledError:
+        pass
     logger.info("Shutting down FastAPI application...")
     await close_db()
     logger.info("Database connections closed")
@@ -208,6 +238,11 @@ async def general_exception_handler(request, exc: Exception):
         },
     )
 
+
+# Serve generated pipeline crops/thumbnails for person images.
+_results_dir = _PROJECT_ROOT / "results"
+_results_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/media/results", StaticFiles(directory=str(_results_dir)), name="results_media")
 
 if __name__ == "__main__":
     host = os.environ.get("API_HOST", "0.0.0.0")

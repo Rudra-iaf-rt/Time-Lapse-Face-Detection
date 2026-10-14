@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/api/client'
 import type { TopologyData } from '@/types'
 import { PageHeader, Panel, LoadingState, ErrorState, EmptyState, DataTable, StatCard } from '@/components/ui'
@@ -8,13 +8,23 @@ export function TopologyPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    api
-      .cameraTopology()
-      .then((r) => setData(r.data || null))
-      .catch((e) => setError(e instanceof Error ? e.message : 'Topology unavailable'))
-      .finally(() => setLoading(false))
+  const loadTopology = useCallback(async () => {
+    try {
+      const r = await api.cameraTopology()
+      setData(r.data || null)
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Topology unavailable')
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    void loadTopology()
+    const timer = window.setInterval(() => void loadTopology(), 5000)
+    return () => window.clearInterval(timer)
+  }, [loadTopology])
 
   const edges = Array.isArray(data?.edges) ? data.edges : []
   const edgeRows = edges.map((edge) => ({
@@ -29,7 +39,16 @@ export function TopologyPage() {
     <div>
       <PageHeader
         title="Camera Topology"
-        subtitle="Edges come from backend CameraGraph. Relationships are not invented in the UI."
+        subtitle="Edges come from backend CameraGraph and refresh after live camera detections."
+        actions={
+          <button
+            type="button"
+            onClick={() => void loadTopology()}
+            className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm"
+          >
+            Refresh
+          </button>
+        }
       />
       {error ? <ErrorState message={error} /> : null}
       {loading ? <LoadingState /> : null}
@@ -58,7 +77,7 @@ export function TopologyPage() {
         {!loading && edgeRows.length === 0 ? (
           <EmptyState
             title="No topology edges"
-            detail="When the transition learner has observations, edges such as 0 to 1 appear here."
+            detail="Live camera runtime detections create transition observations over time."
           />
         ) : (
           <DataTable rows={edgeRows} />

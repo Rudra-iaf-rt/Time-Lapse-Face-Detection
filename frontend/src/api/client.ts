@@ -92,6 +92,9 @@ export const api = {
   getPerson: (globalId: string) =>
     request<ApiEnvelope>(`/api/persons/${encodeURIComponent(globalId)}`),
 
+  personImages: (globalId: string, limit = 24) =>
+    request<ApiEnvelope>(`/api/persons/${encodeURIComponent(globalId)}/images?limit=${limit}`),
+
   personTimeline: (globalId: string) =>
     request<ApiEnvelope>(`/api/persons/${encodeURIComponent(globalId)}/timeline`),
 
@@ -120,6 +123,20 @@ export const api = {
   },
 
   listCameras: () => request<ApiEnvelope>(`/api/cameras`),
+  createCamera: (payload: Record<string, unknown>) =>
+    request<ApiEnvelope>(`/api/cameras`, { method: 'POST', body: JSON.stringify(payload) }),
+  testCamera: (sourceUri: string, sampleFrames = 5) =>
+    request<ApiEnvelope>(`/api/cameras/test`, { method: 'POST', body: JSON.stringify({ source_uri: sourceUri, sample_frames: sampleFrames }) }),
+  listCameraRuntime: () => request<ApiEnvelope>(`/api/cameras/runtimes`),
+  startCamera: (cameraId: number | string, sourceUri?: string) =>
+    request<ApiEnvelope>(`/api/cameras/${encodeURIComponent(String(cameraId))}/start`, {
+      method: 'POST',
+      body: JSON.stringify({ source_uri: sourceUri || null }),
+    }),
+  stopCamera: (cameraId: number | string) =>
+    request<ApiEnvelope>(`/api/cameras/${encodeURIComponent(String(cameraId))}/stop`, { method: 'POST' }),
+  cameraRuntime: (cameraId: number | string) =>
+    request<ApiEnvelope>(`/api/cameras/${encodeURIComponent(String(cameraId))}/runtime`),
   cameraTopology: () => request<ApiEnvelope<TopologyData>>(`/api/cameras/topology/graph`),
   listTracks: (globalId?: string) => {
     const q = globalId ? `?global_id=${encodeURIComponent(globalId)}` : ''
@@ -137,6 +154,7 @@ export const api = {
   },
   entryExit: () => request<ApiEnvelope>(`/api/analytics/entry-exit`),
   adminHealth: () => request<ApiEnvelope>(`/api/admin/health-detail`),
+  modelStatus: () => request<ApiEnvelope>(`/api/admin/model-status`),
   identityStats: () => request<ApiEnvelope>(`/api/admin/identity-stats`),
   wsStatus: () => request<Record<string, unknown>>(`/api/websocket/status`),
 }
